@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Layoffs 2020-2025: An Interactive Timeline</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Tech Layoff Wave</h1>
+            <p class="subtitle">Tracking 4,000+ layoff events from 2020-2025</p>
+        </header>
+
+        <div class="controls">
+            <div class="filter-section">
+                <label>Filter by Industry:</label>
+                <div id="industry-filters" class="filter-buttons"></div>
+            </div>
+            <div class="filter-section">
+                <label>Search Company:</label>
+                <input type="text" id="company-search" placeholder="Type company name...">
+            </div>
+        </div>
+
+        <div class="visualization">
+            <div id="chart"></div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-box">
+                <div class="stat-number" id="total-layoffs">-</div>
+                <div class="stat-label">Total Layoffs</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="companies-affected">-</div>
+                <div class="stat-label">Companies</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="selected-period">All Time</div>
+                <div class="stat-label">Time Period</div>
+            </div>
+        </div>
+
+        <div id="tooltip" class="tooltip"></div>
+
+        <footer>
+            <p>Data Source: <a href="https://www.kaggle.com/datasets/swaptr/layoffs-2022" target="_blank">Kaggle Dataset by Swapnil Tripathi</a>, originally from <a href="https://layoffs.fyi" target="_blank">Layoffs.fyi</a></p>
+        </footer>
+    </div>
+
+    <script src="js/visualization.js"></script>
+</body>
+</html>
