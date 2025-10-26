@@ -47,6 +47,9 @@ d3.json("data/layoffs_processed.json").then((loadedData) => {
 
   // Setup search
   setupSearch();
+
+  // Create additional coordinated views
+  updateAllViews();
 });
 
 function initializeFilters() {
@@ -71,6 +74,7 @@ function initializeFilters() {
 
         updateVisualization();
         updateStats();
+        updateAllViews();
       });
 
     selectedIndustries.add(industry);
@@ -90,6 +94,7 @@ function initializeFilters() {
     selectedCountry = this.value;
     updateVisualization();
     updateStats();
+    updateAllViews();
   });
 
   // Initialize company stage filter (dropdown)
@@ -107,6 +112,7 @@ function initializeFilters() {
     selectedStage = this.value;
     updateVisualization();
     updateStats();
+    updateAllViews();
   });
 
   // Initialize year filter
@@ -123,6 +129,7 @@ function initializeFilters() {
     selectedYear = this.value;
     updateVisualization();
     updateStats();
+    updateAllViews();
   });
 
   // Initialize size filter
@@ -130,6 +137,7 @@ function initializeFilters() {
     selectedSize = this.value;
     updateVisualization();
     updateStats();
+    updateAllViews();
   });
 }
 
@@ -390,45 +398,55 @@ function createStackedAreaChart(monthlyData) {
 
     layers.append('path')
         .attr('class', 'area')
-        .attr('d', area)
         .attr('fill', d => colorScale(d.key))
+        .attr('opacity', 0)
+        .attr('d', area)
+        .transition()
+        .duration(1000)
         .attr('opacity', 0.8)
-        .on('mouseover', function(event, d) {
+        .on('end', function() {
             d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('opacity', 1);
-
-            // Find closest data point
-            const [mouseX] = d3.pointer(event);
-            const x0 = xScale.invert(mouseX);
-
-            // Find closest month
-            const bisect = d3.bisector(d => d.date).left;
-            const index = bisect(monthlyData, x0, 1);
-            const d0 = monthlyData[index - 1];
-            const d1 = monthlyData[index];
-            const closestData = x0 - d0.date > d1.date - x0 ? d1 : d0;
-
-            // Show tooltip
-            const value = closestData[d.key] || 0;
-            tooltip.classed('visible', true)
-                .html(`
-                    <strong>${d.key}</strong>
-                    <div class="tooltip-row">Month: ${closestData.month}</div>
-                    <div class="tooltip-row">Layoffs: ${value.toLocaleString()}</div>
-                `)
-                .style('left', (event.pageX + 15) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mouseout', function() {
-            d3.select(this)
-                .transition()
-                .duration(200)
-                .attr('opacity', 0.8);
-
-            tooltip.classed('visible', false);
+                .on('mouseover', areaMouseover)
+                .on('mouseout', areaMouseout);
         });
+
+    function areaMouseover(event, d) {
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr('opacity', 1);
+
+        // Find closest data point
+        const [mouseX] = d3.pointer(event);
+        const x0 = xScale.invert(mouseX);
+
+        // Find closest month
+        const bisect = d3.bisector(d => d.date).left;
+        const index = bisect(monthlyData, x0, 1);
+        const d0 = monthlyData[index - 1];
+        const d1 = monthlyData[index];
+        const closestData = x0 - d0.date > d1.date - x0 ? d1 : d0;
+
+        // Show tooltip
+        const value = closestData[d.key] || 0;
+        tooltip.classed('visible', true)
+            .html(`
+                <strong>${d.key}</strong>
+                <div class="tooltip-row">Month: ${closestData.month}</div>
+                <div class="tooltip-row">Layoffs: ${value.toLocaleString()}</div>
+            `)
+            .style('left', (event.pageX + 15) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+    }
+
+    function areaMouseout() {
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr('opacity', 0.8);
+
+        tooltip.classed('visible', false);
+    }
 
     // X axis
     g.append('g')
@@ -531,11 +549,16 @@ function addAnnotations(g, xScale, yScale, height) {
                 .attr('class', 'annotation-line')
                 .attr('x1', x)
                 .attr('x2', x)
-                .attr('y1', 0)
+                .attr('y1', height)
                 .attr('y2', height)
                 .attr('stroke', ann.color)
                 .attr('stroke-width', 2)
                 .attr('stroke-dasharray', '5,5')
+                .attr('opacity', 0)
+                .transition()
+                .delay(1000)
+                .duration(500)
+                .attr('y1', 0)
                 .attr('opacity', 0.5);
 
             // Label
@@ -547,7 +570,12 @@ function addAnnotations(g, xScale, yScale, height) {
                 .attr('fill', ann.color)
                 .attr('font-size', '11px')
                 .attr('font-weight', '600')
-                .text(ann.label);
+                .attr('opacity', 0)
+                .text(ann.label)
+                .transition()
+                .delay(1200)
+                .duration(500)
+                .attr('opacity', 1);
         }
     });
 }
@@ -564,12 +592,9 @@ function updateStats() {
         companiesSet.add(event.company);
     });
 
-    // Update stat boxes
-    d3.select('#total-layoffs')
-        .text(totalLayoffs.toLocaleString());
-
-    d3.select('#companies-affected')
-        .text(companiesSet.size.toLocaleString());
+    // Update stat boxes with animation
+    animateNumber('#total-layoffs', totalLayoffs);
+    animateNumber('#companies-affected', companiesSet.size);
 
     // Update time period based on filtered data
     if (filteredEvents.length > 0) {
@@ -584,9 +609,277 @@ function updateStats() {
     }
 }
 
+// Animate number counting
+function animateNumber(selector, targetValue) {
+    const element = d3.select(selector);
+    const currentValue = parseInt(element.text().replace(/,/g, '')) || 0;
+
+    element
+        .transition()
+        .duration(1000)
+        .tween('text', function() {
+            const interpolator = d3.interpolateNumber(currentValue, targetValue);
+            return function(t) {
+                this.textContent = Math.round(interpolator(t)).toLocaleString();
+            };
+        });
+}
+
+// Master update function for all coordinated views
+function updateAllViews() {
+    createBarChart();
+    createDonutChart();
+}
+
+// Top Companies Bar Chart
+function createBarChart() {
+    const container = d3.select('#bar-chart');
+    container.html('');
+
+    const filteredEvents = getFilteredEvents();
+
+    // Aggregate by company
+    const companyData = {};
+    filteredEvents.forEach(event => {
+        if (!companyData[event.company]) {
+            companyData[event.company] = 0;
+        }
+        companyData[event.company] += event.total_laid_off;
+    });
+
+    // Convert to array and sort
+    const topCompanies = Object.entries(companyData)
+        .map(([company, total]) => ({ company, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 15);
+
+    if (topCompanies.length === 0) {
+        container.append('p')
+            .style('text-align', 'center')
+            .style('color', '#7f8c8d')
+            .text('No data available');
+        return;
+    }
+
+    // Dimensions
+    const margin = { top: 10, right: 20, bottom: 40, left: 140 };
+    const containerWidth = document.getElementById('bar-chart').parentElement.clientWidth;
+    const width = Math.max(400, containerWidth - 80) - margin.left - margin.right;
+    const height = Math.max(400, topCompanies.length * 30) - margin.top - margin.bottom;
+
+    // Create SVG
+    const svg = container.append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom);
+
+    const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Scales
+    const xScale = d3.scaleLinear()
+        .domain([0, d3.max(topCompanies, d => d.total)])
+        .range([0, width])
+        .nice();
+
+    const yScale = d3.scaleBand()
+        .domain(topCompanies.map(d => d.company))
+        .range([0, height])
+        .padding(0.2);
+
+    // Tooltip
+    const tooltip = d3.select('#tooltip');
+
+    // Draw bars
+    g.selectAll('.bar-chart-bar')
+        .data(topCompanies)
+        .join('rect')
+        .attr('class', 'bar-chart-bar')
+        .attr('x', 0)
+        .attr('y', d => yScale(d.company))
+        .attr('width', 0)
+        .attr('height', yScale.bandwidth())
+        .attr('fill', '#667eea')
+        .style('cursor', 'pointer')
+        .on('click', function(event, d) {
+            // Highlight this company on main chart
+            const companyEvents = data.events.filter(e => e.company === d.company);
+            highlightCompany(companyEvents);
+
+            // Update search box to show the company name
+            d3.select('#company-search').property('value', d.company);
+        })
+        .on('mouseover', function(event, d) {
+            d3.select(this).attr('fill', '#764ba2');
+
+            tooltip.classed('visible', true)
+                .html(`
+                    <strong>${d.company}</strong>
+                    <div class="tooltip-row">Total Layoffs: ${d.total.toLocaleString()}</div>
+                `)
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+            d3.select(this).attr('fill', '#667eea');
+            tooltip.classed('visible', false);
+        })
+        .transition()
+        .duration(800)
+        .attr('width', d => xScale(d.total));
+
+    // Y axis (company names)
+    g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(yScale))
+        .selectAll('text')
+        .style('font-size', '11px')
+        .style('cursor', 'pointer')
+        .on('click', function(event, d) {
+            const companyEvents = data.events.filter(e => e.company === d);
+            highlightCompany(companyEvents);
+            d3.select('#company-search').property('value', d);
+        });
+
+    // X axis
+    g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toLocaleString()));
+}
+
+// Industry Donut Chart
+function createDonutChart() {
+    const container = d3.select('#donut-chart');
+    container.html('');
+
+    const filteredEvents = getFilteredEvents();
+
+    // Aggregate by industry
+    const industryData = {};
+    filteredEvents.forEach(event => {
+        if (!industryData[event.industry]) {
+            industryData[event.industry] = 0;
+        }
+        industryData[event.industry] += event.total_laid_off;
+    });
+
+    const pieData = Object.entries(industryData)
+        .map(([industry, total]) => ({ industry, total }));
+
+    if (pieData.length === 0) {
+        container.append('p')
+            .style('text-align', 'center')
+            .style('color', '#7f8c8d')
+            .text('No data available');
+        return;
+    }
+
+    // Dimensions
+    const width = 350;
+    const height = 350;
+    const radius = Math.min(width, height) / 2 - 40;
+
+    // Create SVG
+    const svg = container.append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    const g = svg.append('g')
+        .attr('transform', `translate(${width / 2},${height / 2})`);
+
+    // Pie layout
+    const pie = d3.pie()
+        .value(d => d.total)
+        .sort(null);
+
+    // Arc generator
+    const arc = d3.arc()
+        .innerRadius(radius * 0.6)
+        .outerRadius(radius);
+
+    const arcHover = d3.arc()
+        .innerRadius(radius * 0.6)
+        .outerRadius(radius * 1.05);
+
+    // Tooltip
+    const tooltip = d3.select('#tooltip');
+
+    // Draw segments
+    const segments = g.selectAll('.donut-segment')
+        .data(pie(pieData))
+        .join('path')
+        .attr('class', 'donut-segment')
+        .attr('d', arc)
+        .attr('fill', d => colorScale(d.data.industry))
+        .attr('opacity', d => selectedIndustries.has(d.data.industry) ? 0.9 : 0.3)
+        .style('cursor', 'pointer')
+        .on('click', function(event, d) {
+            // Toggle industry filter
+            const industry = d.data.industry;
+            const button = d3.select('#industry-filters button')
+                .filter(function() { return this.textContent === industry; });
+
+            const isActive = selectedIndustries.has(industry);
+
+            if (isActive) {
+                selectedIndustries.delete(industry);
+                button.classed('active', false);
+            } else {
+                selectedIndustries.add(industry);
+                button.classed('active', true);
+            }
+
+            updateVisualization();
+            updateStats();
+            updateAllViews();
+        })
+        .on('mouseover', function(event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('d', arcHover);
+
+            const percentage = (d.data.total / d3.sum(pieData, p => p.total) * 100).toFixed(1);
+
+            tooltip.classed('visible', true)
+                .html(`
+                    <strong>${d.data.industry}</strong>
+                    <div class="tooltip-row">Layoffs: ${d.data.total.toLocaleString()}</div>
+                    <div class="tooltip-row">Percentage: ${percentage}%</div>
+                `)
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('d', arc);
+
+            tooltip.classed('visible', false);
+        });
+
+    // Add center label
+    g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '-0.5em')
+        .style('font-size', '24px')
+        .style('font-weight', '700')
+        .style('fill', '#667eea')
+        .text(d3.sum(pieData, d => d.total).toLocaleString());
+
+    g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '1.2em')
+        .style('font-size', '12px')
+        .style('fill', '#7f8c8d')
+        .text('Total Layoffs');
+}
+
 // Responsive resize
 window.addEventListener('resize', () => {
     if (data) {
         updateVisualization();
+        updateAllViews();
     }
 });
