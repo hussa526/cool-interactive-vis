@@ -19,6 +19,38 @@
                 <label>Filter by Industry:</label>
                 <div id="industry-filters" class="filter-buttons"></div>
             </div>
+            <div class="filter-section filter-row">
+                <div class="filter-dropdown-group">
+                    <label>Filter by Country:</label>
+                    <select id="country-filter" class="filter-select">
+                        <option value="all">All Countries</option>
+                    </select>
+                </div>
+                <div class="filter-dropdown-group">
+                    <label>Filter by Company Stage:</label>
+                    <select id="stage-filter" class="filter-select">
+                        <option value="all">All Stages</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-section filter-row">
+                <div class="filter-dropdown-group">
+                    <label>Time Period:</label>
+                    <select id="year-filter" class="filter-select">
+                        <option value="all">All Years</option>
+                    </select>
+                </div>
+                <div class="filter-dropdown-group">
+                    <label>Layoff Size:</label>
+                    <select id="size-filter" class="filter-select">
+                        <option value="all">All Sizes</option>
+                        <option value="0-100">Small (< 100)</option>
+                        <option value="100-500">Medium (100-500)</option>
+                        <option value="500-1000">Large (500-1,000)</option>
+                        <option value="1000+">Very Large (1,000+)</option>
+                    </select>
+                </div>
+            </div>
             <div class="filter-section">
                 <label>Search Company:</label>
                 <input type="text" id="company-search" placeholder="Type company name...">

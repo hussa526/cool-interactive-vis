@@ -1,6 +1,10 @@
 // Global state
 let data = null;
 let selectedIndustries = new Set();
+let selectedCountry = 'all';
+let selectedStage = 'all';
+let selectedYear = 'all';
+let selectedSize = 'all';
 let chart = null;
 
 // Color scale for industries
@@ -46,10 +50,10 @@ d3.json("data/layoffs_processed.json").then((loadedData) => {
 });
 
 function initializeFilters() {
-  const filterContainer = d3.select("#industry-filters");
-
+  // Initialize industry filters (buttons)
+  const industryContainer = d3.select("#industry-filters");
   data.top_industries.forEach((industry) => {
-    const button = filterContainer
+    const button = industryContainer
       .append("button")
       .attr("class", "filter-btn active")
       .text(industry)
@@ -69,8 +73,75 @@ function initializeFilters() {
         updateStats();
       });
 
-    // Initially all selected
     selectedIndustries.add(industry);
+  });
+
+  // Initialize country filter (dropdown)
+  const countries = [...new Set(data.events.map(e => e.country))].sort();
+  const countrySelect = d3.select("#country-filter");
+
+  countries.forEach(country => {
+    countrySelect.append("option")
+      .attr("value", country)
+      .text(country);
+  });
+
+  countrySelect.on("change", function() {
+    selectedCountry = this.value;
+    updateVisualization();
+    updateStats();
+  });
+
+  // Initialize company stage filter (dropdown)
+  const stages = [...new Set(data.events.map(e => e.stage).filter(s => s && s !== ""))];
+  const sortedStages = sortStages(stages);
+  const stageSelect = d3.select("#stage-filter");
+
+  sortedStages.forEach(stage => {
+    stageSelect.append("option")
+      .attr("value", stage)
+      .text(stage);
+  });
+
+  stageSelect.on("change", function() {
+    selectedStage = this.value;
+    updateVisualization();
+    updateStats();
+  });
+
+  // Initialize year filter
+  const years = [...new Set(data.events.map(e => e.year))].sort();
+  const yearSelect = d3.select("#year-filter");
+
+  years.forEach(year => {
+    yearSelect.append("option")
+      .attr("value", year)
+      .text(year);
+  });
+
+  yearSelect.on("change", function() {
+    selectedYear = this.value;
+    updateVisualization();
+    updateStats();
+  });
+
+  // Initialize size filter
+  d3.select("#size-filter").on("change", function() {
+    selectedSize = this.value;
+    updateVisualization();
+    updateStats();
+  });
+}
+
+function sortStages(stages) {
+  const stageOrder = ["Seed", "Series A", "Series B", "Series C", "Series D", "Series E", "Series F", "Series G", "Series H", "Series I", "Series J", "Post-IPO", "Acquired", "Private Equity", "Unknown"];
+  return stages.sort((a, b) => {
+    const indexA = stageOrder.indexOf(a);
+    const indexB = stageOrder.indexOf(b);
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
   });
 }
 
@@ -178,19 +249,74 @@ function updateVisualization() {
   // Clear existing chart
   d3.select("#chart").html("");
 
-  // Filter data based on selected industries
-  const filteredData = data.monthly.map((d) => {
-    const newEntry = { month: d.month };
-    data.top_industries.forEach((industry) => {
+  // Filter events based on all active filters
+  const filteredEvents = getFilteredEvents();
+
+  // Recalculate monthly aggregations from filtered events
+  const monthlyAggregated = {};
+  filteredEvents.forEach(event => {
+    const month = event.month;
+    const industry = event.industry;
+
+    if (!monthlyAggregated[month]) {
+      monthlyAggregated[month] = {};
+    }
+
+    if (!monthlyAggregated[month][industry]) {
+      monthlyAggregated[month][industry] = 0;
+    }
+
+    monthlyAggregated[month][industry] += event.total_laid_off;
+  });
+
+  // Convert to array format for D3
+  const filteredData = Object.keys(monthlyAggregated).sort().map(month => {
+    const entry = { month: month };
+    data.top_industries.forEach(industry => {
       if (selectedIndustries.has(industry)) {
-        newEntry[industry] = d[industry] || 0;
+        entry[industry] = monthlyAggregated[month][industry] || 0;
       }
     });
-    return newEntry;
+    return entry;
   });
 
   // Create stacked area chart
   createStackedAreaChart(filteredData);
+}
+
+function getFilteredEvents() {
+  return data.events.filter(event => {
+    // Filter by industry
+    if (!selectedIndustries.has(event.industry)) {
+      return false;
+    }
+
+    // Filter by country
+    if (selectedCountry !== 'all' && event.country !== selectedCountry) {
+      return false;
+    }
+
+    // Filter by stage
+    if (selectedStage !== 'all' && event.stage !== selectedStage) {
+      return false;
+    }
+
+    // Filter by year
+    if (selectedYear !== 'all' && event.year !== parseInt(selectedYear)) {
+      return false;
+    }
+
+    // Filter by size
+    if (selectedSize !== 'all') {
+      const layoffs = event.total_laid_off;
+      if (selectedSize === '0-100' && layoffs >= 100) return false;
+      if (selectedSize === '100-500' && (layoffs < 100 || layoffs >= 500)) return false;
+      if (selectedSize === '500-1000' && (layoffs < 500 || layoffs >= 1000)) return false;
+      if (selectedSize === '1000+' && layoffs < 1000) return false;
+    }
+
+    return true;
+  });
 }
 
 function createStackedAreaChart(monthlyData) {
@@ -427,15 +553,15 @@ function addAnnotations(g, xScale, yScale, height) {
 }
 
 function updateStats() {
-    // Calculate stats based on selected industries
+    // Calculate stats based on all active filters
+    const filteredEvents = getFilteredEvents();
+
     let totalLayoffs = 0;
     const companiesSet = new Set();
 
-    data.events.forEach(event => {
-        if (selectedIndustries.has(event.industry)) {
-            totalLayoffs += event.total_laid_off;
-            companiesSet.add(event.company);
-        }
+    filteredEvents.forEach(event => {
+        totalLayoffs += event.total_laid_off;
+        companiesSet.add(event.company);
     });
 
     // Update stat boxes
@@ -445,10 +571,17 @@ function updateStats() {
     d3.select('#companies-affected')
         .text(companiesSet.size.toLocaleString());
 
-    const startDate = data.stats.date_range.start;
-    const endDate = data.stats.date_range.end;
-    d3.select('#selected-period')
-        .text(`${startDate.substring(0, 7)} to ${endDate.substring(0, 7)}`);
+    // Update time period based on filtered data
+    if (filteredEvents.length > 0) {
+        const dates = filteredEvents.map(e => e.date).sort();
+        const startDate = dates[0];
+        const endDate = dates[dates.length - 1];
+        d3.select('#selected-period')
+            .text(`${startDate.substring(0, 7)} to ${endDate.substring(0, 7)}`);
+    } else {
+        d3.select('#selected-period')
+            .text('No data');
+    }
 }
 
 // Responsive resize
