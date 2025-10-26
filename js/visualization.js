@@ -105,6 +105,7 @@ function highlightCompany(events) {
   // Add highlights for matching events
   const svg = d3.select("#chart svg");
   const g = svg.select(".chart-group");
+  const tooltip = d3.select('#tooltip');
 
   events.forEach((event) => {
     const x = chart.xScale(d3.timeParse("%Y-%m-%d")(event.date));
@@ -119,7 +120,56 @@ function highlightCompany(events) {
         .attr("fill", "red")
         .attr("stroke", "white")
         .attr("stroke-width", 2)
-        .style("opacity", 0.8);
+        .style("opacity", 0.8)
+        .style("cursor", "pointer")
+        .on("mouseover", function(mouseEvent) {
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("r", 8)
+            .style("opacity", 1);
+
+          // Format the date nicely
+          const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+
+          // Build tooltip content
+          let tooltipContent = `
+            <strong>${event.company}</strong>
+            <div class="tooltip-row">Date: ${formattedDate}</div>
+            <div class="tooltip-row">Layoffs: ${event.total_laid_off.toLocaleString()}</div>
+            <div class="tooltip-row">Industry: ${event.industry}</div>
+            <div class="tooltip-row">Location: ${event.location}, ${event.country}</div>
+          `;
+
+          // Add optional fields if they exist
+          if (event.percentage && event.percentage !== "") {
+            tooltipContent += `<div class="tooltip-row">Percentage: ${event.percentage}%</div>`;
+          }
+          if (event.stage && event.stage !== "") {
+            tooltipContent += `<div class="tooltip-row">Stage: ${event.stage}</div>`;
+          }
+          if (event.funds_raised && event.funds_raised !== "") {
+            tooltipContent += `<div class="tooltip-row">Funds Raised: $${event.funds_raised}M</div>`;
+          }
+
+          tooltip.classed('visible', true)
+            .html(tooltipContent)
+            .style('left', (mouseEvent.pageX + 15) + 'px')
+            .style('top', (mouseEvent.pageY - 28) + 'px');
+        })
+        .on("mouseout", function() {
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("r", 6)
+            .style("opacity", 0.8);
+
+          tooltip.classed('visible', false);
+        });
     }
   });
 }
