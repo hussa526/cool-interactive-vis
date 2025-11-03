@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Layoffs 2020-2025: An Interactive Timeline</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Tech Layoff Wave</h1>
+            <p class="subtitle">Tracking 4,000+ layoff events from 2020-2025</p>
+        </header>
+
+        <div class="controls">
+            <div class="filter-section">
+                <label>Filter by Industry:</label>
+                <div id="industry-filters" class="filter-buttons"></div>
+            </div>
+            <div class="filter-section filter-row">
+                <div class="filter-dropdown-group">
+                    <label>Filter by Country:</label>
+                    <select id="country-filter" class="filter-select">
+                        <option value="all">All Countries</option>
+                    </select>
+                </div>
+                <div class="filter-dropdown-group">
+                    <label>Filter by Company Stage:</label>
+                    <select id="stage-filter" class="filter-select">
+                        <option value="all">All Stages</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-section filter-row">
+                <div class="filter-dropdown-group">
+                    <label>Time Period:</label>
+                    <select id="year-filter" class="filter-select">
+                        <option value="all">All Years</option>
+                    </select>
+                </div>
+                <div class="filter-dropdown-group">
+                    <label>Layoff Size:</label>
+                    <select id="size-filter" class="filter-select">
+                        <option value="all">All Sizes</option>
+                        <option value="0-100">Small (< 100)</option>
+                        <option value="100-500">Medium (100-500)</option>
+                        <option value="500-1000">Large (500-1,000)</option>
+                        <option value="1000+">Very Large (1,000+)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-section">
+                <label>Search Company:</label>
+                <div class="autocomplete-wrapper">
+                    <div id="autocomplete-suggestion" class="autocomplete-suggestion"></div>
+                    <input type="text" id="company-search" placeholder="Type company name..." autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-box">
+                <div class="stat-number" id="total-layoffs">-</div>
+                <div class="stat-label">Total Layoffs</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="companies-affected">-</div>
+                <div class="stat-label">Companies</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="selected-period">All Time</div>
+                <div class="stat-label">Time Period</div>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <h2 class="chart-title">Layoff Trends Over Time</h2>
+            <div id="chart"></div>
+        </div>
+
+        <div class="bottom-charts">
+            <div class="visualization">
+                <h2 class="chart-title">Top 15 Companies</h2>
+                <div id="bar-chart"></div>
+            </div>
+
+            <div class="visualization">
+                <h2 class="chart-title">Industry Distribution</h2>
+                <div id="donut-chart"></div>
+            </div>
+        </div>
+
+        <div id="tooltip" class="tooltip"></div>
+
+        <footer>
+            <p>Data Source: <a href="https://www.kaggle.com/datasets/swaptr/layoffs-2022" target="_blank">Kaggle Dataset by Swapnil Tripathi</a>, originally from <a href="https://layoffs.fyi" target="_blank">Layoffs.fyi</a></p>
+        </footer>
+    </div>
+
+    <script src="js/visualization.js"></script>
+</body>
+</html>
