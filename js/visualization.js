@@ -155,31 +155,50 @@ function sortStages(stages) {
 
 function setupSearch() {
   const searchInput = d3.select("#company-search");
-  const suggestionDiv = d3.select("#autocomplete-suggestion");
+  const dropdown = d3.select("#autocomplete-dropdown");
   
   // Get all unique company names
   const allCompanies = [...new Set(data.events.map(e => e.company))].sort();
-  let currentSuggestion = "";
+  let selectedIndex = -1;
 
   searchInput.on("input", function () {
     const query = this.value.trim();
     const queryLower = query.toLowerCase();
 
     if (query.length > 0) {
-      // Find first matching company for autocomplete
-      const matchingCompany = allCompanies.find(company => 
-        company.toLowerCase().startsWith(queryLower)
-      );
+      // Find top 5 matching companies
+      const matchingCompanies = allCompanies
+        .filter(company => company.toLowerCase().includes(queryLower))
+        .slice(0, 5);
 
-      if (matchingCompany) {
-        currentSuggestion = matchingCompany;
-        // Show suggestion with proper capitalization from the company name
-        const typedPart = matchingCompany.substring(0, query.length);
-        const suggestionPart = matchingCompany.substring(query.length);
-        suggestionDiv.html(`<span style="color: transparent;">${typedPart}</span><span style="color: #bdc3c7;">${suggestionPart}</span>`);
+      if (matchingCompanies.length > 0) {
+        // Show dropdown with matches
+        dropdown.classed("visible", true);
+        dropdown.html("");
+        
+        matchingCompanies.forEach((company, index) => {
+          const item = dropdown.append("div")
+            .attr("class", "autocomplete-item")
+            .attr("data-index", index)
+            .text(company)
+            .on("click", function() {
+              selectCompany(company);
+            })
+            .on("mouseenter", function() {
+              dropdown.selectAll(".autocomplete-item").classed("selected", false);
+              d3.select(this).classed("selected", true);
+              selectedIndex = index;
+            });
+        });
+        
+        selectedIndex = -1;
       } else {
-        currentSuggestion = "";
-        suggestionDiv.html("");
+        // Show no results message
+        dropdown.classed("visible", true);
+        dropdown.html("");
+        dropdown.append("div")
+          .attr("class", "autocomplete-no-results")
+          .text("No companies found");
       }
 
       // Filter events for highlighting
@@ -189,33 +208,77 @@ function setupSearch() {
 
       if (matchingEvents.length > 0) {
         highlightCompany(matchingEvents);
+      } else {
+        d3.selectAll(".highlight-circle").remove();
       }
     } else {
-      // Clear highlights and suggestion
-      currentSuggestion = "";
-      suggestionDiv.html("");
+      // Clear highlights and dropdown
+      dropdown.classed("visible", false);
+      dropdown.html("");
       d3.selectAll(".highlight-circle").remove();
+      selectedIndex = -1;
     }
   });
 
-  // Handle Tab or Right Arrow key to accept suggestion
+  // Handle keyboard navigation
   searchInput.on("keydown", function(event) {
-    if ((event.key === "Tab" || event.key === "ArrowRight") && currentSuggestion) {
-      const query = this.value.trim();
-      if (query.length > 0 && currentSuggestion.toLowerCase().startsWith(query.toLowerCase())) {
-        event.preventDefault();
-        this.value = currentSuggestion;
-        suggestionDiv.html("");
-        currentSuggestion = "";
-        
-        // Trigger input event to update highlights
-        const inputEvent = new Event('input', { bubbles: true });
-        this.dispatchEvent(inputEvent);
+    const items = dropdown.selectAll(".autocomplete-item");
+    const itemCount = items.size();
+    
+    if (!dropdown.classed("visible") || itemCount === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      selectedIndex = (selectedIndex + 1) % itemCount;
+      updateSelection();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      selectedIndex = selectedIndex <= 0 ? itemCount - 1 : selectedIndex - 1;
+      updateSelection();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < itemCount) {
+        const selectedCompany = items.nodes()[selectedIndex].textContent;
+        selectCompany(selectedCompany);
       }
     } else if (event.key === "Escape") {
-      // Clear suggestion on Escape
-      suggestionDiv.html("");
-      currentSuggestion = "";
+      dropdown.classed("visible", false);
+      dropdown.html("");
+      selectedIndex = -1;
+    }
+  });
+
+  function updateSelection() {
+    dropdown.selectAll(".autocomplete-item").classed("selected", false);
+    if (selectedIndex >= 0) {
+      dropdown.selectAll(".autocomplete-item")
+        .filter((d, i) => i === selectedIndex)
+        .classed("selected", true);
+    }
+  }
+
+  function selectCompany(company) {
+    searchInput.property("value", company);
+    dropdown.classed("visible", false);
+    dropdown.html("");
+    selectedIndex = -1;
+    
+    // Highlight the selected company
+    const companyEvents = data.events.filter(e => e.company === company);
+    if (companyEvents.length > 0) {
+      highlightCompany(companyEvents);
+    }
+  }
+
+  // Close dropdown when clicking outside
+  d3.select("body").on("click", function(event) {
+    if (!searchInput.node().contains(event.target) && 
+        !dropdown.node().contains(event.target)) {
+      dropdown.classed("visible", false);
+      dropdown.html("");
+      selectedIndex = -1;
     }
   });
 }
