@@ -94,37 +94,66 @@ h1 {
     width: 100%;
 }
 
-.autocomplete-suggestion {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 12px 16px;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    font-size: 1em;
-    color: #bdc3c7;
-    pointer-events: none;
-    white-space: nowrap;
-    overflow: hidden;
-    z-index: 1;
-}
-
 #company-search {
-    position: relative;
     width: 100%;
     padding: 12px 16px;
     border: 2px solid #e0e6ed;
     border-radius: 8px;
     font-size: 1em;
     transition: border-color 0.2s ease;
-    background: transparent;
-    z-index: 2;
 }
 
 #company-search:focus {
     outline: none;
     border-color: #667eea;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.autocomplete-dropdown.visible {
+    display: block;
+}
+
+.autocomplete-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f0f4f8;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+    background-color: #f0f4ff;
+    color: #667eea;
+}
+
+.autocomplete-item.selected {
+    font-weight: 600;
+}
+
+.autocomplete-no-results {
+    padding: 12px 16px;
+    color: #7f8c8d;
+    font-style: italic;
+    text-align: center;
 }
 
 .filter-row {
