@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Tech Layoffs Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Compact Header with Stats -->
+        <header class="app-header">
+            <div class="header-top">
+                <h1 class="app-title">Global Tech Layoffs</h1>
+                <div class="header-stats">
+                    <div class="stat-compact">
+                        <div class="stat-label">Total Layoffs</div>
+                        <div class="stat-value" id="total-layoffs">-</div>
+                    </div>
+                    <div class="stat-compact">
+                        <div class="stat-label">Companies</div>
+                        <div class="stat-value" id="companies-affected">-</div>
+                    </div>
+                    <div class="stat-compact">
+                        <div class="stat-label">Period</div>
+                        <div class="stat-value" id="selected-period">All Time</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Filter Bar -->
+            <div class="filter-bar">
+                <div class="search-compact">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 18 18" fill="none">
+                        <path d="M12.5 11H11.71L11.43 10.73C12.41 9.59 13 8.11 13 6.5C13 2.91 10.09 0 6.5 0C2.91 0 0 2.91 0 6.5C0 10.09 2.91 13 6.5 13C8.11 13 9.59 12.41 10.73 11.43L11 11.71V12.5L16 17.49L17.49 16L12.5 11ZM6.5 11C4.01 11 2 8.99 2 6.5C2 4.01 4.01 2 6.5 2C8.99 2 11 4.01 11 6.5C11 8.99 8.99 11 6.5 11Z" fill="currentColor"/>
+                    </svg>
+                    <input type="text" id="company-search" placeholder="Search company..." autocomplete="off">
+                    <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+                </div>
+                
+                <div class="filters-compact">
+                    <div class="filter-group-compact">
+                        <span class="filter-label-compact">Industry:</span>
+                        <div id="industry-filters" class="filter-chips-compact"></div>
+                    </div>
+                    <select id="country-filter" class="filter-select-compact">
+                        <option value="all">All Countries</option>
+                    </select>
+                    <select id="stage-filter" class="filter-select-compact">
+                        <option value="all">All Stages</option>
+                    </select>
+                    <select id="year-filter" class="filter-select-compact">
+                        <option value="all">All Years</option>
+                    </select>
+                    <div class="filter-group-compact">
+                        <span class="filter-label-compact">Layoff Size:</span>
+                        <select id="size-filter" class="filter-select-compact">
+                            <option value="all">All Sizes</option>
+                            <option value="0-100">Small (0-100)</option>
+                            <option value="100-500">Medium (100-500)</option>
+                            <option value="500-1000">Large (500-1,000)</option>
+                            <option value="1000+">Very Large (1,000+)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Grid - Everything Visible -->
+        <main class="main-grid">
+            <!-- Main Chart -->
+            <section class="chart-main">
+                <div class="chart-header-compact">
+                    <h2>Layoff Trends</h2>
+                </div>
+                <div id="chart" class="chart-wrapper-compact"></div>
+            </section>
+
+            <!-- Side Charts -->
+            <section class="chart-side">
+                <div class="chart-card-compact">
+                    <div class="chart-header-compact">
+                        <h3>Top Companies</h3>
+                    </div>
+                    <div id="bar-chart" class="chart-small"></div>
+                </div>
+
+                <div class="chart-card-compact">
+                    <div class="chart-header-compact">
+                        <h3>Industry Breakdown</h3>
+                    </div>
+                    <div id="donut-chart" class="chart-small"></div>
+                </div>
+            </section>
+        </main>
+
+        <div id="tooltip" class="tooltip"></div>
+    </div>
+
+    <script src="js/visualization.js"></script>
+</body>
+</html>
