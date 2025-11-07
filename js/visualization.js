@@ -21,14 +21,14 @@ const colorScale = d3
     "Healthcare",
   ])
   .range([
-    "#667eea",
-    "#764ba2",
-    "#f093fb",
-    "#4facfe",
-    "#43e97b",
-    "#fa709a",
-    "#fee140",
-    "#30cfd0",
+    "#5fb3ff", // Hardware - Bright blue
+    "#ff8800", // Other - Bright orange
+    "#ff00ff", // Consumer - Magenta
+    "#7c8eff", // Retail - Purple-blue
+    "#4dff7a", // Transportation - Bright green
+    "#00ffbf", // Finance - Turquoise
+    "#ffeb3b", // Food - Bright yellow
+    "#4dd0e1", // Healthcare - Cyan
   ]);
 
 // Load and initialize
@@ -436,10 +436,15 @@ function getFilteredEvents() {
 }
 
 function createStackedAreaChart(monthlyData) {
-    // Dimensions
-    const margin = { top: 40, right: 150, bottom: 60, left: 80 };
-    const width = Math.max(1000, window.innerWidth * 0.8) - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
+    // Get container dimensions
+    const container = d3.select('#chart').node();
+    const containerWidth = container ? container.clientWidth : 800;
+    const containerHeight = container ? container.clientHeight : 400;
+    
+    // Dimensions - increased bottom margin for rotated x-axis labels
+    const margin = { top: 30, right: 120, bottom: 80, left: 70 };
+    const width = Math.max(400, containerWidth - margin.left - margin.right);
+    const height = Math.max(300, containerHeight - margin.top - margin.bottom);
 
     // Create SVG
     const svg = d3.select('#chart')
@@ -566,7 +571,9 @@ function createStackedAreaChart(monthlyData) {
         )
         .selectAll('text')
         .attr('transform', 'rotate(-45)')
-        .style('text-anchor', 'end');
+        .style('text-anchor', 'end')
+        .attr('dx', '-8px')
+        .attr('dy', '8px');
 
     // Y axis
     g.append('g')
@@ -580,7 +587,7 @@ function createStackedAreaChart(monthlyData) {
     g.append('text')
         .attr('class', 'axis-label')
         .attr('x', width / 2)
-        .attr('y', height + 55)
+        .attr('y', height + 65)
         .attr('text-anchor', 'middle')
         .text('Time Period');
 
@@ -640,9 +647,9 @@ function createStackedAreaChart(monthlyData) {
 
 function addAnnotations(g, xScale, yScale, height) {
     const annotations = [
-        { date: '2020-03', label: 'COVID-19 Begins', color: '#e74c3c' },
-        { date: '2022-11', label: 'Tech Winter', color: '#3498db' },
-        { date: '2023-11', label: 'ChatGPT Era', color: '#2ecc71' }
+        { date: '2020-03', label: 'COVID-19 Begins', color: '#ff5555' },
+        { date: '2022-11', label: 'Tech Downturn', color: '#4d9eff' },
+        { date: '2023-11', label: 'ChatGPT Era', color: '#4dff7a' }
     ];
 
     const parseDate = d3.timeParse('%Y-%m');
@@ -769,11 +776,13 @@ function createBarChart() {
         return;
     }
 
-    // Dimensions
-    const margin = { top: 10, right: 20, bottom: 40, left: 140 };
-    const containerWidth = document.getElementById('bar-chart').parentElement.clientWidth;
-    const width = Math.max(400, containerWidth - 80) - margin.left - margin.right;
-    const height = Math.max(400, topCompanies.length * 30) - margin.top - margin.bottom;
+    // Dimensions - compact
+    const margin = { top: 10, right: 20, bottom: 35, left: 120 };
+    const containerEl = document.getElementById('bar-chart');
+    const containerWidth = containerEl ? containerEl.clientWidth : 400;
+    const containerHeight = containerEl ? containerEl.clientHeight : 300;
+    const width = Math.max(300, containerWidth - margin.left - margin.right);
+    const height = Math.max(200, Math.min(containerHeight - margin.top - margin.bottom, topCompanies.length * 22));
 
     // Create SVG
     const svg = container.append('svg')
@@ -806,7 +815,7 @@ function createBarChart() {
         .attr('y', d => yScale(d.company))
         .attr('width', 0)
         .attr('height', yScale.bandwidth())
-        .attr('fill', '#667eea')
+        .attr('fill', '#7c8eff')
         .style('cursor', 'pointer')
         .on('click', function(event, d) {
             // Highlight this company on main chart
@@ -817,7 +826,7 @@ function createBarChart() {
             d3.select('#company-search').property('value', d.company);
         })
         .on('mouseover', function(event, d) {
-            d3.select(this).attr('fill', '#764ba2');
+            d3.select(this).attr('fill', '#7c8eff');
 
             tooltip.classed('visible', true)
                 .html(`
@@ -828,19 +837,19 @@ function createBarChart() {
                 .style('top', (event.pageY - 28) + 'px');
         })
         .on('mouseout', function() {
-            d3.select(this).attr('fill', '#667eea');
+            d3.select(this).attr('fill', '#7c8eff');
             tooltip.classed('visible', false);
         })
         .transition()
         .duration(800)
         .attr('width', d => xScale(d.total));
 
-    // Y axis (company names)
+    // Y axis (company names) - compact
     g.append('g')
         .attr('class', 'axis')
         .call(d3.axisLeft(yScale))
         .selectAll('text')
-        .style('font-size', '11px')
+        .style('font-size', '10px')
         .style('cursor', 'pointer')
         .on('click', function(event, d) {
             const companyEvents = data.events.filter(e => e.company === d);
@@ -882,10 +891,14 @@ function createDonutChart() {
         return;
     }
 
-    // Dimensions
-    const width = 350;
-    const height = 350;
-    const radius = Math.min(width, height) / 2 - 40;
+    // Dimensions - compact and responsive
+    const containerEl = document.getElementById('donut-chart');
+    const containerWidth = containerEl ? containerEl.clientWidth : 300;
+    const containerHeight = containerEl ? containerEl.clientHeight : 300;
+    const size = Math.min(containerWidth, containerHeight, 300);
+    const width = size;
+    const height = size;
+    const radius = Math.min(width, height) / 2 - 30;
 
     // Create SVG
     const svg = container.append('svg')
@@ -967,19 +980,19 @@ function createDonutChart() {
             tooltip.classed('visible', false);
         });
 
-    // Add center label
+    // Add center label - compact
     g.append('text')
         .attr('text-anchor', 'middle')
-        .attr('dy', '-0.5em')
-        .style('font-size', '24px')
+        .attr('dy', '-0.4em')
+        .style('font-size', Math.max(16, radius * 0.25) + 'px')
         .style('font-weight', '700')
-        .style('fill', '#667eea')
+        .style('fill', '#7c8eff')
         .text(d3.sum(pieData, d => d.total).toLocaleString());
 
     g.append('text')
         .attr('text-anchor', 'middle')
-        .attr('dy', '1.2em')
-        .style('font-size', '12px')
+        .attr('dy', '1em')
+        .style('font-size', Math.max(10, radius * 0.12) + 'px')
         .style('fill', '#7f8c8d')
         .text('Total Layoffs');
 }
